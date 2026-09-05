@@ -1,0 +1,95 @@
+{
+  "info": {
+    "name": "CampusCertify",
+    "description": "College Event Certificate Eligibility Board — REST API. Base URL: http://localhost:8080",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8080" }
+  ],
+  "item": [
+    {
+      "name": "1. GET Activities (fixed table)",
+      "request": {
+        "method": "GET",
+        "url": { "raw": "{{baseUrl}}/api/activities", "host": ["{{baseUrl}}"], "path": ["api", "activities"] }
+      }
+    },
+    {
+      "name": "2. GET Participants (current rows)",
+      "request": {
+        "method": "GET",
+        "url": { "raw": "{{baseUrl}}/api/participants", "host": ["{{baseUrl}}"], "path": ["api", "participants"] }
+      }
+    },
+    {
+      "name": "3. POST Reset (restore 5 built-in rows)",
+      "request": {
+        "method": "POST",
+        "url": { "raw": "{{baseUrl}}/api/reset", "host": ["{{baseUrl}}"], "path": ["api", "reset"] }
+      }
+    },
+    {
+      "name": "4. POST Evaluate (built-in oracle)",
+      "request": {
+        "method": "POST",
+        "url": { "raw": "{{baseUrl}}/api/evaluate", "host": ["{{baseUrl}}"], "path": ["api", "evaluate"] }
+      }
+    },
+    {
+      "name": "5. POST Add participant",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"id\": \"C06\",\n  \"name\": \"Farah\",\n  \"completedActivityIds\": [\"A01\", \"A03\"]\n}"
+        },
+        "url": { "raw": "{{baseUrl}}/api/participants", "host": ["{{baseUrl}}"], "path": ["api", "participants"] }
+      }
+    },
+    {
+      "name": "6. PUT Update participant (e.g. add A04 to C05)",
+      "request": {
+        "method": "PUT",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"id\": \"C05\",\n  \"name\": \"Eshan\",\n  \"completedActivityIds\": [\"A01\", \"A03\", \"A04\"]\n}"
+        },
+        "url": { "raw": "{{baseUrl}}/api/participants/C05", "host": ["{{baseUrl}}"], "path": ["api", "participants", "C05"] }
+      }
+    },
+    {
+      "name": "7. DELETE participant",
+      "request": {
+        "method": "DELETE",
+        "url": { "raw": "{{baseUrl}}/api/participants/C06", "host": ["{{baseUrl}}"], "path": ["api", "participants", "C06"] }
+      }
+    },
+    {
+      "name": "Scenario: Clear C01 activities",
+      "request": {
+        "method": "PUT",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"id\": \"C01\",\n  \"name\": \"Asha\",\n  \"completedActivityIds\": []\n}"
+        },
+        "url": { "raw": "{{baseUrl}}/api/participants/C01", "host": ["{{baseUrl}}"], "path": ["api", "participants", "C01"] }
+      }
+    },
+    {
+      "name": "Scenario: Duplicate A01 on C01 (triggers DUPLICATE_PARTICIPATION)",
+      "request": {
+        "method": "PUT",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"id\": \"C01\",\n  \"name\": \"Asha\",\n  \"completedActivityIds\": [\"A01\", \"A02\", \"A03\", \"A01\"]\n}"
+        },
+        "url": { "raw": "{{baseUrl}}/api/participants/C01", "host": ["{{baseUrl}}"], "path": ["api", "participants", "C01"] }
+      }
+    }
+  ]
+}
