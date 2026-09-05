@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CampusCertify — Certificate Eligibility Board</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <header class="page-header">
+    <h1>Certificate Eligibility Board</h1>
+    <p class="subtitle">Eligible = covers LEARN, BUILD and SHARE <strong>and</strong> scores at least 6 points.</p>
+  </header>
+
+  <main>
+    <section class="panel">
+      <h2>Fixed activities</h2>
+      <table class="grid" id="activityTable">
+        <thead>
+          <tr>
+            <th>Activity ID</th>
+            <th>Activity</th>
+            <th>Category</th>
+            <th class="numeric">Points</th>
+          </tr>
+        </thead>
+        <tbody id="activityBody"></tbody>
+      </table>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Participants</h2>
+        <div class="actions">
+          <button id="evaluateBtn" class="primary">Evaluate</button>
+          <button id="resetBtn" class="ghost">Reset sample</button>
+        </div>
+      </div>
+
+      <table class="grid" id="participantTable">
+        <thead>
+          <tr>
+            <th>Participant ID</th>
+            <th>Participant</th>
+            <th>Completed activity IDs</th>
+            <th class="numeric">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="participantBody"></tbody>
+      </table>
+
+      <div class="add-row">
+        <input id="newId" placeholder="Participant ID" aria-label="New participant id" />
+        <input id="newName" placeholder="Participant name" aria-label="New participant name" />
+        <input id="newActivities" placeholder="Activity IDs, e.g. A01, A02" aria-label="New completed activity ids" />
+        <button id="addBtn" class="ghost">Add participant</button>
+      </div>
+      <p class="hint">Completed activities are edited as comma-separated tokens so invalid input stays reachable.</p>
+    </section>
+
+    <section id="validationPanel" class="panel error-panel" hidden>
+      <h2>Validation errors</h2>
+      <table class="grid">
+        <thead>
+          <tr>
+            <th>Code</th>
+            <th>Participant</th>
+            <th>Offending value</th>
+          </tr>
+        </thead>
+        <tbody id="validationBody"></tbody>
+      </table>
+      <p class="hint">Results and counts are cleared while any input error is present.</p>
+    </section>
+
+    <section id="summaryPanel" class="panel" hidden>
+      <h2>Summary</h2>
+      <div class="counts">
+        <div class="count-card eligible">
+          <span class="count-value" id="eligibleCount">0</span>
+          <span class="count-label">Eligible</span>
+        </div>
+        <div class="count-card ineligible">
+          <span class="count-value" id="ineligibleCount">0</span>
+          <span class="count-label">Ineligible</span>
+        </div>
+      </div>
+    </section>
+
+    <section id="resultsPanel" class="panel" hidden>
+      <h2>Eligibility results</h2>
+      <table class="grid" id="resultTable">
+        <thead>
+          <tr>
+            <th>Status</th>
+            <th>ID</th>
+            <th>Participant</th>
+            <th>Category progress</th>
+            <th class="numeric">Points</th>
+            <th>Failure reasons</th>
+          </tr>
+        </thead>
+        <tbody id="resultBody"></tbody>
+      </table>
+      <p class="hint">Eligible participants first, then ineligible; each group sorted by participant ID ascending.</p>
+    </section>
+
+    <section id="emptyState" class="panel muted">
+      <p>Press <strong>Evaluate</strong> to score the current participant table.</p>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+
+</html>
