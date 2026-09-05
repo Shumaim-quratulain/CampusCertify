@@ -409,3 +409,68 @@ Walked through capturing **visual evidence** (not just a test-run log) of the fi
 
 This mirrors the exact rehearsal already logged earlier in this file (the `./mvnw test` version, showing 15/41 tests failing then passing again) — the difference here is capturing the **browser-visible** version of the same change as photographic evidence, rather than only a test-run transcript, since the presentation materials benefit from both forms of proof.
 
+---
+
+## Explaining VS Code's git status colors, and cleaning up the working tree
+
+**Question:** why do some files show up green/yellow instead of white in the explorer?
+
+**Answer given:** these are VS Code's git-status decorations, not errors — 🟡 yellow/orange = modified (tracked file, content changed), 🟢 green = untracked (new to git), 🔴 red/strikethrough = deleted (tracked file missing from disk), ⚪ white = matches the last commit exactly.
+
+At the time of asking, `git status --short` showed:
+```
+ M Chats/execution.md
+ D Output/AfterEvaluate.png
+ D Output/FirstPage.png
+?? Chats/overview.md
+?? Output/LiveMod-Threshold7.png
+?? "Output/Scenario #1.png"
+?? "Output/Scenario #2.png"
+?? "Output/Scenario #3.png"
+?? "Output/Scenario #4.png"
+```
+
+**Investigation before committing:** compared file sizes to confirm nothing was actually lost — `Scenario #1.png` (105424 bytes) matched `FirstPage.png` exactly, and `Scenario #2.png` (71440 bytes) matched `AfterEvaluate.png` exactly. Confirmed these were **renames**, not accidental deletions — the user had renamed the two original screenshots to fit the new naming scheme and added two more (`#3`, `#4`) for the previously-missing acceptance scenarios, plus the live-modification proof.
+
+**Also verified:** `Chats/overview.md` had reappeared with the same 173-line content as before — confirmed the user had restored it themselves after the earlier accidental deletion, so it was kept rather than re-removed.
+
+**Action taken before committing:**
+1. Updated `Presentation/5-Testing-and-Validation.md` — replaced the stale reference to `Output/FirstPage.png` / `Output/AfterEvaluate.png` with a table listing all 5 actual screenshot files and what each one proves
+2. `git add -A && git commit && git push` — git automatically detected the two renames (`R Output/FirstPage.png -> "Output/Scenario #1.png"`) rather than recording them as delete+add pairs
+3. Confirmed `git status` returned **"nothing to commit, working tree clean"** afterward
+
+**Lesson:** before assuming a `D` (deleted) status means lost work, compare file sizes or content against the new files with similar purpose — a rename often shows up as delete-old + add-new in `git status --short` until you actually stage it, at which point git's rename detection collapses the pair back into a single `R` entry.
+
+---
+
+## Final completeness check against STUDENT_GUIDE.pdf and the problem statement PDF
+
+Ran a full audit cross-referencing every requirement in both source documents against the actual repo state, rather than relying on memory of what had been done in earlier sessions.
+
+**Verification commands run:**
+```bash
+./mvnw test                                    # Tests run: 41, Failures: 0, Errors: 0, Skipped: 0
+git status --short                             # only the two problem-statement PDFs untracked
+ls Output/*.png postman/*.png Presentation/*.md # all evidence files present
+```
+
+**STUDENT_GUIDE.pdf deliverables — all confirmed present:**
+- Working solution (functional, running instructions, sample data) — ✅
+- AI interaction documentation (prompt history, iteration examples, problem-solving examples) — ✅ across `Idea.md`, `Implementation.md`, `Presentation/2-AI-Prompting-Strategy.md`
+- Design summary (architecture decisions, AI influence, trade-offs) — ✅ `Presentation/3` and `4`
+- Test evidence (test plan, edge cases) — ✅ `Presentation/5`, 41 tests, 5 screenshots
+- Development environment ready (live modification, quick startup, AI tools accessible, technology familiarity) — ✅ `Presentation/6`, two rehearsed live modifications, sub-1-second startup
+
+**"Areas to avoid" — confirmed none apply:** no blind copy-paste (every decision has a documented *why*), no over-engineering (explicit cuts logged: 4 store interfaces → 1, DTO-per-type → 1 DTO, `@ControllerAdvice` removed), no missing validation (41 tests + screenshots), no prompt stagnation (the database question alone iterated 4 times before landing on a decision), no ethics violations (own repo, own conversation history).
+
+**Problem statement acceptance criteria — all 5 required scenarios verified with a specific screenshot or Postman capture each:**
+1. Built-in oracle (totals 7,6,7,7,4, counts 2/3) — `Scenario #2.png`
+2. Per-participant reasons (C03/C04/C05) — same capture
+3. Add A04 to C05 (counts 3/2) — `Scenario #3.png`
+4. Clear C01 (counts 1/4) — `Scenario #4.png`
+5. Duplicate A01 on C01 (error, no stale rows) — `postman/Duplicate A01 on C01.png`
+
+**One non-blocking loose end identified:** `STUDENT_GUIDE.pdf` and `Student_SI26_P12-college-event-certificate-eligibility-board.pdf` show as untracked in git — they were deleted from git history earlier via GitHub's web UI, but local copies exist again on disk. Not part of the graded deliverable (they're the assignment prompt, not the solution), so left as an optional cosmetic cleanup rather than something requiring action.
+
+**Conclusion:** every deliverable named in both source documents is implemented, tested, documented, and pushed to GitHub. Remaining work is rehearsal only — no further code or documentation gaps identified.
+
