@@ -4,6 +4,10 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 
+### Problem statement source PDFs (assignment prompt, not a deliverable) ###
+STUDENT_GUIDE.pdf
+Student_SI26_P12-college-event-certificate-eligibility-board.pdf
+
 ### STS ###
 .apt_generated
 .classpath
