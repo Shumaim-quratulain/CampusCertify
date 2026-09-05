@@ -59,3 +59,56 @@ public static final int REQUIRED_POINTS = 6;   →   = 7;
 - [x] Live-modification exercise rehearsed end-to-end, including the test-suite safety net
 - [x] Suite returned to 41/41 green after revert
 
+---
+
+## Plain-language execution steps
+
+### Step 1 — Open a terminal in the project folder
+```bash
+cd /Users/shumaimquratualain/Documents/CampusCertify
+```
+
+### Step 2 — Start the application
+```bash
+./mvnw spring-boot:run
+```
+Wait for: `Started CampuscertifyApplication in 0.7... seconds`. Leave this terminal running — it's the live server; don't close it or press Ctrl+C while the app should stay up.
+
+### Step 3 — Open the website
+```
+http://localhost:8080
+```
+Shows the Certificate Eligibility Board — fixed activity table, editable participant table, Evaluate/Reset buttons.
+
+### Step 4 — Use the app
+
+| Action | What to do |
+|---|---|
+| Score everyone | Click **Evaluate** |
+| Edit a participant | Click into the Name or Activity IDs box for that row, change it, press Tab or click elsewhere (triggers save) |
+| Add a participant | Fill the three boxes at the bottom (ID, name, activity IDs like `A01, A02`) → click **Add participant** |
+| Remove a participant | Click **Remove** on that row |
+| Restore sample data | Click **Reset sample** |
+
+### Step 5 — Stop the application
+In the terminal running the server, press `Control + C`.
+
+### Quick reference card
+```bash
+cd /Users/shumaimquratualain/Documents/CampusCertify   # go to project folder
+./mvnw spring-boot:run                                    # start server
+```
+→ open **http://localhost:8080** → click **Evaluate** → press **Ctrl+C** to stop.
+
+### Alternative — run the packaged JAR (no Maven wrapper needed)
+```bash
+java -jar target/campuscertify-0.0.1-SNAPSHOT.jar
+```
+Same result, same URL — the "hand it to someone with just a JDK" version. Requires `./mvnw clean package` to have been run first.
+
+### Run the tests instead (no browser needed)
+```bash
+./mvnw test
+```
+Expected: `Tests run: 41, Failures: 0, Errors: 0, Skipped: 0` and `BUILD SUCCESS`.
+
