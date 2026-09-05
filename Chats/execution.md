@@ -173,3 +173,38 @@ Added [postman/CampusCertify.postman_collection.json](../postman/CampusCertify.p
 
 **Suggested demo flow in Postman:** Reset → Evaluate (see oracle) → Update C05 (add A04) → Evaluate again (counts 3/2) → Reset → run the duplicate-participation scenario → Evaluate (see `errors` populated, `results` empty, `summary` absent).
 
+---
+
+## One-click run via VS Code Task (no typing)
+
+**Problem:** clicking a generic ▷ "Run" button (e.g. Code Runner) while a `.md` file is open tries to execute the markdown file itself, which fails with `Missing Script Text In code-runner.shellScriptText`. Code Runner only runs single files and has no concept of a multi-module Maven project with dependencies (Spring Boot, Tomcat) — it isn't the right tool for this project regardless of which file is open.
+
+**Fix:** added `.vscode/tasks.json` defining a VS Code **task** (not a Code Runner script) that runs `./mvnw spring-boot:run`, marked as the default build task:
+
+```json
+{
+  "label": "Run CampusCertify",
+  "type": "shell",
+  "command": "./mvnw",
+  "args": ["spring-boot:run"],
+  "isBackground": true,
+  "group": { "kind": "build", "isDefault": true },
+  "problemMatcher": {
+    "background": {
+      "activeOnStart": true,
+      "beginsPattern": "Starting CampuscertifyApplication",
+      "endsPattern": "Started CampuscertifyApplication|APPLICATION FAILED TO START"
+    }
+  }
+}
+```
+
+**How to run it with zero typing:**
+- `Cmd+Shift+B` → runs the default build task directly, **or**
+- `Cmd+Shift+P` → "Tasks: Run Build Task" → Enter, **or**
+- `Cmd+Shift+P` → "Tasks: Run Task" → select "Run CampusCertify"
+
+**Verified:** ran via the task runner (not the terminal) — task started the app, `curl http://localhost:8080/` returned `200`. Confirmed with a real port conflict encountered mid-session (an earlier server instance was still holding port 8080) — killed it (`lsof -ti:8080 | xargs kill -9`) and re-ran the task successfully, proving the "port already in use" failure was a leftover process, not a task-configuration problem.
+
+**Note:** this replaces "typing `./mvnw spring-boot:run` every time" with one keystroke — but a terminal (or its equivalent, `mvnw`) is still what actually executes underneath; there is no way to start a Spring Boot app with literally zero process invocation.
+
