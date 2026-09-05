@@ -208,3 +208,50 @@ Added [postman/CampusCertify.postman_collection.json](../postman/CampusCertify.p
 
 **Note:** this replaces "typing `./mvnw spring-boot:run` every time" with one keystroke — but a terminal (or its equivalent, `mvnw`) is still what actually executes underneath; there is no way to start a Spring Boot app with literally zero process invocation.
 
+---
+
+## Diagnosing and fixing the ▷ (Run) button
+
+**Symptom:** clicking the lone ▷ icon in the top-right editor toolbar always produced:
+```
+Missing Script Text In code-runner.shellScriptText
+```
+regardless of which file was open.
+
+### Diagnosis
+Two unrelated issues were confused as one at first:
+
+1. **`danielatherton.vs-code-coderunner-0.0.1`** is installed and owns that specific ▷ icon (registered via `editor/title` menu contribution in its `package.json`). Its behavior is entirely driven by a setting, `code-runner.shellScriptText`, whose **default value is literally the error message itself**:
+   ```json
+   "code-runner.shellScriptText": {
+     "default": "echo $(read -te '?Missing Script Text In code-runner.shellScriptText')"
+   }
+   ```
+   So the extension was never "broken" — it was simply unconfigured, and its default is a self-describing placeholder.
+
+2. A separate "Maven Compile" task elsewhere had run plain `mvn compile` (not `./mvnw`) and failed with **exit code 127** (command not found) — an independent, pre-existing fact from Phase 0: global Maven isn't installed on this machine, only the wrapper.
+
+Confirmed via `code --list-extensions`-equivalent (`ls ~/.vscode/extensions`) and by reading the extension's own `package.json` at `~/.vscode/extensions/danielatherton.vs-code-coderunner-0.0.1/package.json`.
+
+### Options considered
+| Option | Verdict |
+|---|---|
+| Uninstall the extension globally | Rejected by user — too invasive, affects other projects |
+| Disable it per-workspace via `workbench.extensions.action.disableWorkspace` | **Not scriptable** — VS Code only exposes this as a UI gear-icon action next to the extension in the Extensions panel; there is no command-with-target-id form for headless invocation |
+| Add `unwantedRecommendations` in `.vscode/extensions.json` | Only suppresses future install *prompts* — does not disable an already-installed, already-active extension |
+| **Configure the extension's own setting** | ✅ Chosen — the extension already does exactly what's needed, it was just never told what to run |
+
+### Fix applied
+Added to `.vscode/settings.json` (workspace-scoped, no global/extension changes):
+```json
+"code-runner.shellScriptSource": "string",
+"code-runner.shellScriptText": "cd \"${workspaceFolder}\" && ./mvnw spring-boot:run"
+```
+Now clicking ▷ runs `./mvnw spring-boot:run` — the correct wrapper-based command — instead of the placeholder error.
+
+### Verification caveat
+At the time of the fix, a server from an earlier task run was **still live** on port 8080 (`curl localhost:8080/api/activities` → `200`). Clicking ▷ immediately after the fix would therefore correctly fail with "port already in use" — that is expected behavior (Spring Boot cannot bind a port twice), not a sign the fix didn't work. Stopping the existing instance first is required before ▷ produces a clean start.
+
+### Lesson
+An extension throwing a config-driven error message is not automatically "broken" — reading its `package.json` contribution points and configuration defaults (rather than assuming it needs to be removed) revealed the fix was a two-line settings addition, with zero disruption to the rest of the VS Code setup.
+
