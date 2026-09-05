@@ -665,4 +665,159 @@ The Java compiler **enforces** the mapping: a file declaring `package com.campus
 
 `com.campus` is idiomatic and was kept. Alternatives considered: `com.yourname`, `io.github.username`, `com.college`.
 
+---
+
+## Q4 — "So implementation part is done? Code is done?"
+
+**Yes — confirmed with a fresh clean build:** 41/41 tests passing, zero IDE errors.
+
+| Layer | Status |
+|---|---|
+| Domain model (8 types) | ✅ |
+| `BoardState` (fixed activities + mutable participants) | ✅ |
+| `ParticipantValidator` (4 error codes) | ✅ |
+| `EligibilityEvaluator` (categories, points, reasons) | ✅ |
+| `BoardService` (orchestration, sort, summary) | ✅ |
+| REST API (7 endpoints) | ✅ |
+| Frontend (HTML/CSS/JS, dark theme, progress strip) | ✅ |
+| All 5 required acceptance scenarios | ✅ verified via tests + live HTTP + browser clicks |
+| Test suite | ✅ 41 tests, 6 test classes |
+
+**What remains is not code, but interview packaging:**
+1. Live demo readiness — already true (`./mvnw spring-boot:run`)
+2. Prompt history / iteration narrative — already captured in `Chats/Idea.md` and `Chats/Implementation.md`
+3. A full screenshot set covering all 5 acceptance scenarios as test evidence
+4. Rehearsing the live-modification exercise (change `REQUIRED_POINTS`, add a category, add an activity)
+5. Git history — not yet committed at the time this question was asked
+
+---
+
+## Q5 — "Login git and commit all these"
+
+**No login was actually needed.** Git identity was already configured globally:
+```
+user.name  = Shumaim Quratulain
+user.email = shumaimquaratulain@gmail.com
+```
+This was a purely local repository at this point (no remote), so no authentication was required — "login" only applies once pushing to a remote host.
+
+### What was done
+```
+git init -b main
+git add -A
+git commit -m "CampusCertify: Certificate Eligibility Board implementation ..."
+```
+
+**Result:** 37 files, 4078 insertions, single commit `902a772` on branch `main`.
+
+### What's under version control
+- Full Spring Boot app (`src/main`, `src/test`) — 16 main classes, 6 test classes, 3 static frontend files
+- `pom.xml`, `mvnw` / `mvnw.cmd` (Maven Wrapper)
+- Planning docs: `Chats/Idea.md`, `Chats/Implementation.md`, `Chats/plan.md`
+- Both problem-statement PDFs
+
+### Correctly excluded via `.gitignore`
+`target/` (build output), `.vscode/` (local editor settings), `HELP.md` (Spring Initializr boilerplate).
+
+---
+
+## Q6 — "I have created a repository in GitHub named campusCertify. How to upload this project?"
+
+### Checked first
+- GitHub CLI (`gh`) — not installed, so used plain `git` + HTTPS remote instead
+- No remote configured yet on the local repo
+
+### Steps taken
+1. Asked for the repo URL and connection method (HTTPS vs SSH) — user provided:
+   `https://github.com/Shumaim-quratulain/CampusCertify.git`, HTTPS.
+2. `git remote add origin https://github.com/Shumaim-quratulain/CampusCertify.git`
+3. `git push -u origin main` → **rejected**:
+   ```
+   ! [rejected]  main -> main (fetch first)
+   ```
+
+### Diagnosis
+GitHub auto-creates a `README.md` commit when a repository is created through the web UI (if that option is left checked). The remote's `main` therefore already had one commit (`Initial commit`, containing only `README.md`) that the local repo didn't know about — a classic diverged-history rejection, not an authentication problem. Confirmed via:
+```
+git fetch origin
+git log origin/main --oneline        → 3defc98 Initial commit
+git ls-tree -r --name-only origin/main → README.md
+```
+
+### Fix
+```
+git rebase origin/main
+```
+Replayed the local commit on top of the remote's README commit, producing clean linear history:
+```
+* c809680 CampusCertify: Certificate Eligibility Board implementation
+* 3defc98 Initial commit
+```
+Then:
+```
+git push -u origin main
+```
+**Result:** pushed successfully — 63 objects, ~198 KB. Branch `main` now tracks `origin/main`. Project live at:
+**https://github.com/Shumaim-quratulain/CampusCertify**
+
+### Lesson
+"Rejected — fetch first" almost always means diverged history, not a permissions/auth problem — check `git log origin/<branch> --oneline` before assuming credentials are the issue. A `rebase` (not `merge`) was the right call here because the remote had exactly one small, unrelated commit and a linear history reads better for a project being reviewed.
+
+---
+
+## Phase 9 — Execution & deployment readiness  ✅
+
+**Decision:** local execution readiness + a standalone runnable JAR only. **No cloud deployment.**
+
+**Why:** the problem statement says *"Evaluate local records only"* and names a browser/local tool as the expected form — it never asks for hosting. The STUDENT_GUIDE explicitly warns against *"complex frameworks or unnecessary layers for the given scope,"* and a cloud deploy (Azure/Render/Railway) is exactly that — extra infrastructure that doesn't move any grading criterion. What the guide *does* grade is *"Development Environment Ready"* and *"Quick startup"* — a local concern, not a hosting concern.
+
+### 1. Standalone executable JAR
+```
+./mvnw clean package
+```
+Produced `target/campuscertify-0.0.1-SNAPSHOT.jar` (~21 MB, embedded Tomcat included).
+
+**Verified it runs with no Maven, no wrapper, no IDE:**
+```
+java -jar target/campuscertify-0.0.1-SNAPSHOT.jar
+```
+Started in **1.083 seconds**. Confirmed live via `/api/evaluate` — same oracle (7,6,7,7,4 / counts 2,3) as every other run. This is the artifact you'd hand to someone with only a JDK installed.
+
+### 2. Dev-mode startup timing (the actual interview command)
+```
+./mvnw spring-boot:run
+```
+Started in **0.757 seconds** — well within "quick startup."
+
+### 3. Live-modification rehearsal — raise the eligibility threshold
+Simulated the most likely live-modification ask: *"raise the point requirement to 7."*
+
+**Change:** one line in `EligibilityEvaluator`:
+```java
+public static final int REQUIRED_POINTS = 6;   →   = 7;
+```
+
+**Result of `./mvnw test` immediately after:**
+- The failure-reason string **automatically became `POINTS_BELOW_7`** — no second edit needed, because it's derived (`"POINTS_BELOW_" + REQUIRED_POINTS`) rather than a separate literal.
+- **15 of 41 tests failed** — all of them oracle tests that hardcode the spec's example data, which assumes a 6-point threshold (e.g. C02 at exactly 6 points, previously eligible, is now correctly ineligible).
+
+**Why this is good, not bad:** it proves the test suite verifies real behavior instead of just existing. A grader asking "how do you know this one-line change didn't silently break something?" gets an immediate, concrete answer — the suite caught every ripple.
+
+**Reverted** `REQUIRED_POINTS` back to `6`, re-ran tests: **41/41 green again.**
+
+### Demo script for the interview (rehearsed)
+1. `./mvnw spring-boot:run` → open `http://localhost:8080`
+2. Click **Evaluate** → built-in oracle: totals 7,6,7,7,4; counts 2 eligible / 3 ineligible
+3. Edit C05's activities to add `A04` → **Evaluate** → 6/6, counts 3/2
+4. Click **Reset sample** → clear C01's activities → **Evaluate** → 0 points, 4 reasons, counts 1/4
+5. **Reset sample** → add a second `A01` to C01 → **Evaluate** → `DUPLICATE_PARTICIPATION` banner, no stale rows/counts
+6. **Live modification:** change `REQUIRED_POINTS` in `EligibilityEvaluator`, re-run `./mvnw test`, show the test suite catching the ripple, then revert
+
+### Checkpoint
+- [x] `java -jar` runs standalone (1.083s startup)
+- [x] `./mvnw spring-boot:run` runs for live dev (0.757s startup)
+- [x] Full acceptance-scenario oracle re-verified against the standalone JAR
+- [x] Live-modification exercise rehearsed end-to-end, including the test-suite safety net
+- [x] Suite returned to 41/41 green after revert
+
 
