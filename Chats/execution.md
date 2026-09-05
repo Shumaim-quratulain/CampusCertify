@@ -373,3 +373,39 @@ Then a fresh `Cmd+Shift+B` task run started cleanly with no port conflict, and `
 
 **Lesson:** after any live-modification rehearsal or ad-hoc server start, **explicitly stop the process** (`Ctrl+C` in its terminal, or the trash icon on the VS Code task panel) before starting a new one. A leftover server doesn't just block the port — because it never reloads code, it can silently keep serving a since-reverted experimental change, which is a much more confusing symptom than a simple port conflict.
 
+---
+
+## Accidental deletion of `Chats/overview.md`, and why it wasn't reconciled in prose
+
+**Background:** `Chats/overview.md` was an untracked file — a separate, earlier exploratory session (different AI tool, different day) that had recommended a **CLI in Java/C** for this problem, contradicting the Spring Boot web app actually built.
+
+**What happened:** while addressing that apparent contradiction, the file was deleted (`rm Chats/overview.md`) on the reasoning that `Chats/Idea.md` already contains the real, operative decision record — the user explicitly asked *"which method best for me"* stating they knew Java/Spring Boot, and the AI recommended Spring Boot with full reasoning right there. Since `overview.md` never influenced the actual build, deleting it seemed safe.
+
+**Problem:** the file was untracked (`git status` showed `??`), meaning **git had no copy of it anywhere** — no commit, no stash, nothing. Deleting an untracked file with `rm` is unrecoverable through git. This was confirmed via:
+```bash
+git log --all --oneline -- Chats/overview.md      # no output — never committed
+git log --diff-filter=A --all --oneline -- "*overview*"   # no output
+```
+
+**Recovery attempt:** searched VS Code's own local file history (`~/Library/Application Support/Code/User/History/`), which independently snapshots file edits regardless of git. Found a matching `entries.json` referencing `overview.md` in one history folder — a real backup existed — but the recovery was stopped mid-attempt at the user's request before the snapshot file was actually read back.
+
+**Current state:** `overview.md` remains deleted; a VS Code local-history snapshot may still exist and could be recovered later if wanted, but no one has confirmed or restored it.
+
+**Lesson:** before deleting any file — even ones that seem safely superseded by another document — check `git status` first. An untracked file has **zero git safety net**; only a committed, stashed, or previously-tracked-then-deleted file can be recovered with `git`. For genuinely irreplaceable content, commit it first (even to a throwaway branch) before deciding whether to remove it.
+
+---
+
+## Rehearsing the "raise the threshold" live modification as an actual screenshot
+
+Walked through capturing **visual evidence** (not just a test-run log) of the first live-modification rehearsal, for use as `Output/LiveMod-Threshold7.png`:
+
+1. Change `EligibilityEvaluator.REQUIRED_POINTS` from `6` to `7` and save
+2. Stop the running server (`Ctrl+C`, or the trash icon on the VS Code task panel) — restarting is required because the JVM doesn't hot-reload a changed constant
+3. Restart with `./mvnw spring-boot:run`, wait for `Started CampuscertifyApplication`
+4. In the browser: click **Reset sample**, then **Evaluate**
+5. Expected visible change: **C02 (Bilal)**, normally eligible at exactly 6 points, now shows **INELIGIBLE** with reason `POINTS_BELOW_7`; summary counts drop from 2/3 to **1 eligible / 4 ineligible**
+6. Capture with `Cmd+Shift+4` (drag-select the results area), move the file into `Output/LiveMod-Threshold7.png`
+7. **Revert** `REQUIRED_POINTS` back to `6`, save, stop and restart the server again to confirm the app returns to its normal state (2 eligible / 3 ineligible)
+
+This mirrors the exact rehearsal already logged earlier in this file (the `./mvnw test` version, showing 15/41 tests failing then passing again) — the difference here is capturing the **browser-visible** version of the same change as photographic evidence, rather than only a test-run transcript, since the presentation materials benefit from both forms of proof.
+

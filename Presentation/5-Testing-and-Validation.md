@@ -97,7 +97,15 @@ BUILD SUCCESS
 
 ## Manual browser verification, captured as evidence
 
-`Output/FirstPage.png` and `Output/AfterEvaluate.png` capture the actual rendered UI — the fixed activity table, the editable participant table, the category progress strip (solid segments for covered categories, dashed for missing), and the results table sorted eligible-first.
+| Screenshot | Scenario |
+|---|---|
+| `Output/Scenario #1.png` | Fresh page load — fixed activity table, editable participant table, buttons |
+| `Output/Scenario #2.png` | Built-in oracle evaluated — totals 7,6,7,7,4, counts 2 eligible / 3 ineligible |
+| `Output/Scenario #3.png` | Acceptance scenario — add A04 to C05, counts become 3 eligible / 2 ineligible |
+| `Output/Scenario #4.png` | Acceptance scenario — duplicate A01 on C01, `DUPLICATE_PARTICIPATION` shown, results/summary hidden |
+| `Output/LiveMod-Threshold7.png` | Live modification — `REQUIRED_POINTS` raised to 7, C02 flips to ineligible with `POINTS_BELOW_7` |
+
+Each capture shows the category progress strip (solid segments for covered categories, dashed for missing) and the results table sorted eligible-first.
 
 ## Test-first discovery worth mentioning live
 
