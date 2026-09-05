@@ -16,17 +16,43 @@ public static final int REQUIRED_POINTS = 6;   →   = 7;
 
 Full transcript of this rehearsal, including the exact failing test list, is in `Chats/execution.md`.
 
-## Second modification — ready candidates, not yet rehearsed
+## Rehearsed modification #2 — add a 4th activity category
 
-The rubric allows for "possibly a second if time permits." Three candidates are ready, ranked by how directly they test the architecture's claimed flexibility:
+**Change:** one line in `Category`:
+```java
+public enum Category {
+    LEARN,
+    BUILD,
+    SHARE
+    // →
+    LEARN,
+    BUILD,
+    SHARE,
+    PRESENT
+}
+```
+
+**Nothing else was touched** — not `EligibilityEvaluator`, not `BoardService`, not the frontend. This is the claim the design decisions make (`Category.values()` iteration drives both coverage-counting and reason-ordering), tested for real rather than just asserted.
+
+**What happened when tested:**
+- `./mvnw test` immediately showed **19 of 41 tests failing** — every oracle test that assumes 3-category coverage is achievable, because no built-in activity has category `PRESENT`, so nobody can cover all 4 anymore
+- Live via the API (`POST /api/evaluate`), **`MISSING_CATEGORY: PRESENT` appeared automatically**, correctly positioned after existing missing categories and before `POINTS_BELOW_6` where applicable:
+  ```
+  C05 → ["MISSING_CATEGORY: BUILD", "MISSING_CATEGORY: PRESENT", "POINTS_BELOW_6"]
+  ```
+- Even **C01 and C02 — previously the only two eligible participants — correctly flipped to ineligible**, counts going from 2/3 to 0/5
+- Reverted the enum, re-ran: **41/41 green again**
+
+**Why this is strong evidence:** it directly demonstrates the specific design claim under test — that category handling is centralized in one enum — rather than describing the claim without proof.
+
+## Third candidate — not yet rehearsed
 
 | Candidate | Touches | Claim being tested |
 |---|---|---|
-| **Add a 4th category** (e.g., `PRESENT`) | `Category` enum only | `failureReasons` and eligibility both iterate `Category.values()` — should need zero other code changes |
 | **Add a new activity** (e.g., A05) | `BoardState.buildActivities()` only | The fixed table is defined in exactly one place |
 | **Change sort order** (e.g., ID descending within each group) | `BoardService.RESULT_ORDER` comparator | Tests whether the `.reversed()` trap can be explained and avoided live, under time pressure |
 
-**Recommended pick if asked live:** adding a 4th category — it's the most visually obvious change (a new column appears in the UI progress strip) and directly demonstrates the enum-driven-ordering design decision.
+Either is ready to rehearse the same way if there's time before the interview.
 
 ## Environment readiness
 

@@ -307,3 +307,37 @@ cat pom.xml | grep version/artifactId  # Spring Boot 3.5.3, Java 21
 
 **Result:** 295 insertions, 55 deletions in one commit. Verified against real facts (test count re-run, file tree confirmed via `find`) rather than reused from memory, since the earlier version had already drifted from the actual state of the repo (e.g., stale test counts would have been wrong if not re-checked).
 
+---
+
+## Presentation/ folder — organizing raw chats into the 6 grading criteria
+
+**Request:** the raw `Chats/` logs (Idea, plan, Implementation, execution) are conversation transcripts, not presentation-ready deliverables. Asked for a new folder splitting the content into one file per criterion from the "How You'll Be Evaluated" section.
+
+**Created `Presentation/`** — 6 documents plus an index, each synthesized (not copy-pasted) from the raw logs:
+1. `1-Planning-and-Solution-Presentation.md` — condensed the 9-phase build log into a real 3–5 step plan, plus a table of what changed vs. the plan
+2. `2-AI-Prompting-Strategy.md` — extracted the actual prompt trail from `Idea.md` via `grep -n "^User:"`, organized into 6 stages of broad→specific escalation with real quotes
+3. `3-Design-Constraints-and-Technology-Choices.md` — constraints given up front + a technology-choice table with alternatives considered
+4. `4-AI-Influenced-Decision-Making.md` — trade-offs, 2 bugs caught before shipping, 1 assumption disproven while testing
+5. `5-Testing-and-Validation.md` — 41-test breakdown re-verified fresh, all 5 required scenarios, specific edge cases
+6. `6-Live-Modification-Capability.md` — the rehearsed threshold change, plus candidates for a second modification (initially flagged honestly as "not yet rehearsed" rather than fabricated)
+
+**Left `Chats/overview.md` untracked deliberately** — it's an external Gemini conversation recommending a CLI in Java/C, which contradicts the actual Spring Boot implementation. Flagged as a reconciliation risk rather than silently including it.
+
+### Second live-modification rehearsal — closing the gap this raised
+
+The user asked to actually rehearse the second modification candidate rather than leave it as "ready but untested." Picked **adding a 4th category (`PRESENT`)** since it most directly tests the specific design claim (`Category.values()` iteration drives both eligibility and reason-ordering) with the most visible effect.
+
+**Change:** one line in `Category.java` — added `PRESENT` to the enum.
+
+**Verified two ways:**
+1. `./mvnw test` → **19 of 41 tests failed**, all of them oracle-data tests assuming 3-category coverage is achievable (it no longer is, since no built-in activity carries the new category)
+2. Live via `POST /api/evaluate` (after restarting the dev server — a stale process from an earlier task run was still holding port 8080 on the old compiled classes; killed it, `Cmd+Shift+B`-equivalent restart picked up the change):
+   ```
+   C05 → ["MISSING_CATEGORY: BUILD", "MISSING_CATEGORY: PRESENT", "POINTS_BELOW_6"]
+   ```
+   Even **C01 and C02 — the only two previously-eligible participants — correctly flipped to ineligible**, counts moving from 2/3 to 0/5.
+
+**Confirmed zero other files touched** — `EligibilityEvaluator`, `BoardService`, and the frontend all needed no changes, exactly as the design decisions in `3-Design-Constraints-and-Technology-Choices.md` claim.
+
+**Reverted** the enum, re-ran tests: **41/41 green.** Updated `Presentation/6-Live-Modification-Capability.md` to record this as a verified rehearsal rather than an unrehearsed candidate.
+
