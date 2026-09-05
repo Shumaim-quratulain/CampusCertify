@@ -355,3 +355,21 @@ The user asked to actually rehearse the second modification candidate rather tha
 
 **Lesson to act on going forward:** commit immediately after any Presentation/Chats documentation edit, since these files have now demonstrably been vulnerable to silent external reversion three separate times, and `git checkout` only helps if a commit already exists to restore from.
 
+---
+
+## "My code is not running" — a stale server process from the earlier rehearsal
+
+**Symptom:** user pasted repeated `./mvnw spring-boot:run` failures — one `exit code 137` after an 18-minute run, then several `exit code 1` failures all showing the same error: `Web server failed to start. Port 8080 was already in use.`
+
+**Diagnosis:** `lsof -i :8080` and `ps aux | grep java` identified the exact process: PID `85412`, a `CampuscertifyApplication` instance started at 10:48 PM — left running from the second live-modification rehearsal (the `PRESENT` category test) and **never stopped**. Confirmed via `curl -X POST localhost:8080/api/evaluate`: this stale instance was still returning `MISSING_CATEGORY: PRESENT` for every participant, even though `Category.java` had long since been reverted to 3 categories and `./mvnw test` was green.
+
+**Root cause, precisely:** a running JVM does not reload classes that are recompiled on disk after it starts. `Category.java` was correctly reverted and recompiled into `target/classes`, but the *already-running* process from the rehearsal had the old `PRESENT`-including `Category.class` loaded in memory and kept serving it. That same leftover process was also the reason every subsequent `spring-boot:run` attempt failed with "port already in use" — two symptoms, one cause.
+
+**Fix:**
+```bash
+kill -9 85412 85280   # the app process + its parent Maven wrapper process
+```
+Then a fresh `Cmd+Shift+B` task run started cleanly with no port conflict, and `POST /api/evaluate` was re-verified to return the correct oracle (totals 7,6,7,7,4; counts 2 eligible / 3 ineligible) with `PRESENT` gone entirely.
+
+**Lesson:** after any live-modification rehearsal or ad-hoc server start, **explicitly stop the process** (`Ctrl+C` in its terminal, or the trash icon on the VS Code task panel) before starting a new one. A leftover server doesn't just block the port — because it never reloads code, it can silently keep serving a since-reverted experimental change, which is a much more confusing symptom than a simple port conflict.
+
