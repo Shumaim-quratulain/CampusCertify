@@ -255,3 +255,55 @@ At the time of the fix, a server from an earlier task run was **still live** on 
 ### Lesson
 An extension throwing a config-driven error message is not automatically "broken" — reading its `package.json` contribution points and configuration defaults (rather than assuming it needs to be removed) revealed the fix was a two-line settings addition, with zero disruption to the rest of the VS Code setup.
 
+---
+
+## "Why is it showing error" — validation caught a blank participant row
+
+**Symptom:** the running app's Participants table showed a validation panel with:
+```
+INVALID_PARTICIPANT  —  participantId
+INVALID_PARTICIPANT  —  participantName
+```
+instead of results, after adding a new participant.
+
+**Diagnosis:** not a bug — the participant table had a row with both the ID and Name fields blank (visible as an empty row between C05 and C06 in the screenshot). `ParticipantValidator.checkIdentity()` requires both fields non-empty, so it correctly rejected the row with both error codes. Per the spec, "any input error clears result rows and counts from an earlier evaluation," so the results/summary panels were correctly hidden — this is the intended fail-safe path, not broken evaluation.
+
+**Fix:** none needed in code. Three ways to recover in the UI: remove the blank row, fill in its ID/name, or click Reset sample. Confirmed this is genuinely one of the required acceptance behaviors working live (the `INVALID_PARTICIPANT` path), useful as interview evidence rather than something to "fix."
+
+---
+
+## README rewrite — from placeholder to full documentation
+
+**Starting point:** `README.md` was still GitHub's auto-generated placeholder (`# CampusCertify`, 15 bytes) — never touched despite everything else being pushed.
+
+**First pass:** wrote a working README (tech stack, project structure, run instructions, API table, design notes, links into `Chats/`) — functional but plain, and the user didn't like it.
+
+**User's actual ask:** shown a screenshot of a previous project's README (a Spring Boot e-commerce API) with badges, a table of contents, an architecture flowchart, and heavy visual organization — wanted CampusCertify's README to match that structure, and wanted the links to `Chats/` planning docs removed from the visible README.
+
+**Facts gathered before rewriting** (grounding every claim in the actual repo rather than guessing):
+```bash
+find src -name "*.java" | wc -l        # 22 main + test files total
+./mvnw test | grep "Tests run:"        # 41 passing, confirmed fresh
+cat pom.xml | grep version/artifactId  # Spring Boot 3.5.3, Java 21
+```
+
+**New README structure**, styled to match the reference screenshot:
+- Centered header with emoji title + subtitle
+- Shield.io-style badges: Java 21, Spring Boot 3.5.3, Maven Wrapper, In-Memory storage, HTML/CSS/JS, 41 Passing Tests, Postman
+- Table of Contents with anchor links
+- **System Architecture** — ASCII-art flowchart (Browser → Controller → Service → Validator/Evaluator/State)
+- **Technology Stack** table with a "why" column
+- **Project Structure** — fully annotated file tree, one-line purpose per file
+- **Fixed Activity Table** — the spec's 4 rows, verbatim
+- **Eligibility Rules** section including the full built-in participant oracle as a table (C01–C05 with totals/status/reasons)
+- **API Endpoints** — full table + a real JSON example of the `EvaluationResponse` envelope
+- **Validation & Error Codes** — all 4 codes with trigger conditions
+- **Design Decisions** — 7 entries (List vs Set, Category.values() ordering, REQUIRED_POINTS constant, always-200 evaluate, the comparator trap, LinkedHashMap store, no ControllerAdvice)
+- **Local Setup & Running** — three options (dev mode / JAR / VS Code zero-typing)
+- **Running the Tests** — command, expected output, per-class breakdown table
+- **Postman API Testing** — import steps + the 6-step demo flow
+
+**Explicitly removed:** the "Documentation" section linking out to `Chats/Idea.md`, `plan.md`, `Implementation.md`, `execution.md` — per the user's request, those planning logs stay in the repo but are no longer surfaced in the README itself.
+
+**Result:** 295 insertions, 55 deletions in one commit. Verified against real facts (test count re-run, file tree confirmed via `find`) rather than reused from memory, since the earlier version had already drifted from the actual state of the repo (e.g., stale test counts would have been wrong if not re-checked).
+
