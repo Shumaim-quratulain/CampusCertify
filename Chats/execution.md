@@ -112,3 +112,64 @@ Same result, same URL — the "hand it to someone with just a JDK" version. Requ
 ```
 Expected: `Tests run: 41, Failures: 0, Errors: 0, Skipped: 0` and `BUILD SUCCESS`.
 
+---
+
+## Commit verification and file-integrity check
+
+**Q: "Is implementation, execution, and deployment all committed?"**
+
+Checked `git status`, local log, remote log, and diffed local vs `origin/main` — all identical at that point, working tree clean.
+
+**Caught along the way:** `Chats/execution.md` had been silently emptied on disk (113 lines → blank), unrelated to any tool action in this session — likely an editor autosave glitch. Confirmed the last committed version on GitHub still had the full content, then restored it:
+```bash
+git restore --staged Chats/execution.md
+git checkout -- Chats/execution.md
+```
+Result: 114 lines back, `nothing to commit, working tree clean`. Nothing was lost because the file had already been pushed before the local copy was emptied.
+
+**Lesson:** before committing any file, check whether a local file was unexpectedly emptied/shrunk versus the remote — `git diff origin/main --stat` surfaces this immediately as a large deletion with no corresponding edit.
+
+---
+
+## Committing via the VS Code UI (no terminal)
+
+For manual commits without typing git commands:
+
+1. Click the **Source Control** icon in the left sidebar (or `Ctrl+Shift+G` / click the icon directly)
+2. Review the **Changes** list — click any file to see a diff (red = removed, green = added)
+3. Stage changes: hover a file → click **`+`**, or stage everything via the **Changes** header **`+`**
+   (skippable — committing with nothing staged auto-stages everything, same as `git add -A && git commit`)
+4. Type a commit message in the box at the top
+5. Click **Commit**
+6. Click **Sync Changes** (cloud icon, sometimes shows "1↑") to push to GitHub
+
+```
+Source Control icon → Changes list → type message → Commit → Sync Changes
+```
+
+Git identity (`Shumaim Quratulain` / `shumaimquaratulain@gmail.com`) is already configured globally, so no login prompt is expected.
+
+---
+
+## Postman collection for manual API testing
+
+Added [postman/CampusCertify.postman_collection.json](../postman/CampusCertify.postman_collection.json) — 9 pre-built requests covering every REST endpoint, all verified live against the running server before handing off:
+
+| # | Request | Method & path | Verifies |
+|---|---|---|---|
+| 1 | GET Activities | `GET /api/activities` | The 4 fixed rows |
+| 2 | GET Participants | `GET /api/participants` | Current rows |
+| 3 | POST Reset | `POST /api/reset` | Restores the 5 built-in rows |
+| 4 | POST Evaluate | `POST /api/evaluate` | Oracle: totals 7,6,7,7,4, counts 2/3 |
+| 5 | POST Add participant | `POST /api/participants` | Adds C06/Farah |
+| 6 | PUT Update participant | `PUT /api/participants/C05` | Adds A04 to C05 |
+| 7 | DELETE participant | `DELETE /api/participants/C06` | Removes C06 |
+| — | Scenario: Clear C01 activities | `PUT /api/participants/C01` | 0 points, 4 reasons, counts 1/4 |
+| — | Scenario: Duplicate A01 on C01 | `PUT /api/participants/C01` | `DUPLICATE_PARTICIPATION`, no results |
+
+**Verification method:** each request body was replayed via `curl` against the live `./mvnw spring-boot:run` instance before committing — confirmed 200 responses and correct payloads (activity list, oracle summary `{eligibleCount:2, ineligibleCount:3}`, 6-row participant list after add, 200 on delete).
+
+**Import steps:** Postman → File → Import → select the JSON file → 9 requests appear under a "CampusCertify" collection, using a `{{baseUrl}}` variable (`http://localhost:8080`) so the port is changeable in one place.
+
+**Suggested demo flow in Postman:** Reset → Evaluate (see oracle) → Update C05 (add A04) → Evaluate again (counts 3/2) → Reset → run the duplicate-participation scenario → Evaluate (see `errors` populated, `results` empty, `summary` absent).
+
