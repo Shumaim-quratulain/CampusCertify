@@ -341,3 +341,17 @@ The user asked to actually rehearse the second modification candidate rather tha
 
 **Reverted** the enum, re-ran tests: **41/41 green.** Updated `Presentation/6-Live-Modification-Capability.md` to record this as a verified rehearsal rather than an unrehearsed candidate.
 
+---
+
+## Recurring issue — files silently losing content on disk
+
+**Symptom, third occurrence:** after the `Presentation/` expansion commit, a routine follow-up check found `Chats/execution.md` missing its most recent 34 lines (the "Presentation/ folder" section) and `Presentation/6-Live-Modification-Capability.md` reverted to a shorter, earlier version — despite both being fully committed and pushed moments before. Same pattern as the earlier `execution.md`-emptied incident and the `Presentation/` folder briefly appearing empty.
+
+**Diagnosis:** `git diff HEAD` on both files showed clean, isolated removals of previously-committed content, not new edits — confirming this is content silently disappearing from the working tree, not a bad edit. No tool call in this session removed either file's content, so the cause is external (most likely an editor autosave/format-on-save conflict, or a sync tool touching the same paths).
+
+**Fix, same as before:** `git checkout -- <file>` restores from the last commit. Nothing was lost in any of the three occurrences because commits happened before each loss — this is the concrete argument for committing early and often rather than batching many changes into one working-tree session.
+
+**Also confirmed while investigating:** the `Runner` terminal's `./mvnw spring-boot:run` failure (exit 1) was not a new bug — the app was already running and responding `200 OK` on port 8080 from an earlier task launch; the failure was simply "port already in use" from clicking the run command while an instance was already up.
+
+**Lesson to act on going forward:** commit immediately after any Presentation/Chats documentation edit, since these files have now demonstrably been vulnerable to silent external reversion three separate times, and `git checkout` only helps if a commit already exists to restore from.
+
